@@ -104,6 +104,8 @@ RUN rm install_inductor_benchmark_deps.sh common_utils.sh timm.txt huggingface.t
 ARG TRITON
 ARG TRITON_CPU
 
+ARG SKIP_SCCACHE_INSTALL
+
 # Create a separate stage for building Triton and Triton-CPU.  install_triton
 # will check for the presence of env vars
 FROM base as triton-builder
@@ -113,10 +115,23 @@ COPY ci_commit_pins/triton.txt triton.txt
 COPY ci_commit_pins/triton-cpu.txt triton-cpu.txt
 RUN bash ./install_triton.sh
 
+# Install ccache/sccache (do this last, so we get priority in PATH)
+FROM base as sccache
+COPY ./common/install_cache.sh install_cache.sh
+ENV PATH /opt/cache/bin:$PATH
+RUN if [ -z "${SKIP_SCCACHE_INSTALL}" ]; then bash ./install_cache.sh; fi
+RUN rm install_cache.sh
+
 FROM base as final
 COPY --from=triton-builder /opt/triton /opt/triton
-RUN if [ -n "${TRITON}" ] || [ -n "${TRITON_CPU}" ]; then pip install /opt/triton/*.whl; chown -R jenkins:jenkins /opt/conda; fi
+RUN if [ -n "${TRITON}" ] || [ -n "${TRITON_CPU}" ]; then pip install /opt/triton/*.whl; fi
 RUN rm -rf /opt/triton
+
+COPY --from=sccache /opt/cache /opt/cache
+COPY --from=sccache /opt/rocm /opt/rocm
+ENV PATH /opt/cache/bin:$PATH
+
+RUN chown -R jenkins:jenkins /opt/conda
 
 ARG EXECUTORCH
 # Build and install executorch
@@ -152,13 +167,6 @@ COPY ./common/install_openblas.sh install_openblas.sh
 RUN if [ -n "${OPENBLAS}" ]; then bash ./install_openblas.sh; fi
 RUN rm install_openblas.sh
 ENV INSTALLED_OPENBLAS ${OPENBLAS}
-
-# Install ccache/sccache (do this last, so we get priority in PATH)
-ARG SKIP_SCCACHE_INSTALL
-COPY ./common/install_cache.sh install_cache.sh
-ENV PATH /opt/cache/bin:$PATH
-RUN if [ -z "${SKIP_SCCACHE_INSTALL}" ]; then bash ./install_cache.sh; fi
-RUN rm install_cache.sh
 
 # Add jni.h for java host build
 COPY ./common/install_jni.sh install_jni.sh
