@@ -43,7 +43,7 @@ jobs:
         export ADDITIONAL_LINTRUNNER_ARGS="--take CLANGTIDY,CLANGFORMAT --all-files"
         export CLANG=1
         .github/scripts/lintrunner.sh
-
+      upload-artifact: lintrunner-clang-artifact
   lintrunner-noclang:
     uses: pytorch/test-infra/.github/workflows/linux_job_v2.yml@main
     needs: get-label-type
@@ -59,6 +59,7 @@ jobs:
       script: |
         export ADDITIONAL_LINTRUNNER_ARGS="--skip CLANGTIDY,CLANGFORMAT --all-files"
         .github/scripts/lintrunner.sh
+      upload-artifact: lintrunner-noclang-artifact
 
   quick-checks:
     uses: pytorch/test-infra/.github/workflows/linux_job_v2.yml@main

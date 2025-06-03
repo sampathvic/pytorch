@@ -52,4 +52,7 @@ jq --raw-output \
     '"::\(if .severity == "advice" or .severity == "disabled" then "warning" else .severity end) file=\(.path),line=\(.line),col=\(.char),title=\(.code) \(.name)::" + (.description | gsub("\\n"; "%0A"))' \
     lint.json || true
 
+python -m tools.linter.commit_changes --format-output --input-file lint.json
+mv lint.json.formatted "${RUNNER_ARTIFACT_DIR}/"
+
 exit $RC
