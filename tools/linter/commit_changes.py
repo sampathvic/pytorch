@@ -26,7 +26,7 @@ def read_file(file_path: str) -> List[dict]:
     """Read the content of a file."""
     ret = []
     with open(file_path, 'r') as f:
-        for line in f:
+        for line in f.readlines():
             line = line.strip()
             if not line:
                 continue
