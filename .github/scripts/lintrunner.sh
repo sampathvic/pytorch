@@ -53,6 +53,7 @@ jq --raw-output \
     lint.json || true
 
 python -m tools.linter.commit_changes --mode format-input --input-file lint.json
-mv lint.json.formatted "${RUNNER_ARTIFACT_DIR}/"
+mkdir artifacts-to-be-uploaded
+mv lint.json.formatted artifacts-to-be-uploaded/
 
 exit $RC
