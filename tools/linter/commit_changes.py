@@ -64,9 +64,9 @@ def download_artifacts(workflow_id: str) -> List[str]:
 
 def format_input_file(input_file: str, cwd: str) -> List[dict]:
     """Format the input file by ensuring all paths are relative to the current working directory."""
-    all_changes = []
     print(cwd)
-    for change in read_file(input_file):
+    all_changes = read_file(input_file)
+    for change in all_changes:
         path = Path( change["path"])
         print(path)
         print(path.is_absolute())
