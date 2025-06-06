@@ -1,14 +1,14 @@
 import argparse
-import io
 import json
 import os
 from pathlib import Path
 import shutil
 from typing import List
-from urllib.request import urlopen, Request
 import zipfile
-
+import difflib
 import requests
+
+TMP = Path("/tmp/lintrunner_artifacts")
 
 
 
@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
 def read_file(file_path: str) -> List[dict]:
     """Read the content of a file."""
     ret = []
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         for line in f.readlines():
             line = line.strip()
             if not line:
@@ -37,8 +37,14 @@ def read_file(file_path: str) -> List[dict]:
                 print(f"Error decoding JSON from line: {line}. Error: {e}")
     return ret
 
+def generate_diff(original: str, replacement: str) -> str:
+    """Generate a unified diff between two strings."""
+    diff = difflib.unified_diff(original.splitlines(keepends=True), replacement.splitlines(keepends=True), lineterm='', fromfile='original', tofile='replacement')
+    return ''.join(diff)
+
+
 def download_artifacts(workflow_id: str) -> List[str]:
-    tmp = Path("/tmp/lintrunner_artifacts") / workflow_id
+    tmp = TMP / workflow_id
     tmp.mkdir(parents=True, exist_ok=True)
 
     url = f"https://api.github.com/repos/pytorch/pytorch/actions/runs/{workflow_id}/artifacts"
@@ -64,17 +70,30 @@ def download_artifacts(workflow_id: str) -> List[str]:
 
 def format_input_file(input_file: str, cwd: str) -> List[dict]:
     """Format the input file by ensuring all paths are relative to the current working directory."""
-    print(cwd)
     all_changes = read_file(input_file)
     for change in all_changes:
         path = Path( change["path"])
-        print(path)
-        print(path.is_absolute())
         if  path.is_absolute():
             path = path.relative_to(Path(cwd))
         change["path"] = str(path)
 
     return all_changes
+
+
+def colorize_diff(diff: List[str]) -> List[str]:
+    result = []
+    for line in diff:
+        if line.startswith('+++') or line.startswith('---'):
+            result.append(f'\033[34m{line}\033[0m')  # blue
+        elif line.startswith('@@'):
+            result.append(f'\033[35m{line}\033[0m')  # magenta
+        elif line.startswith('+') and not line.startswith('+++'):
+            result.append(f'\033[32m{line}\033[0m')  # green
+        elif line.startswith('-') and not line.startswith('---'):
+            result.append(f'\033[31m{line}\033[0m')  # red
+        else:
+            result.append(line)
+    return result
 
 def apply_change(change: dict, cwd: str) -> None:
     """Apply a single change to the file system."""
@@ -82,13 +101,17 @@ def apply_change(change: dict, cwd: str) -> None:
     abs_path = Path(cwd) / path
 
     if "original" not in change or "replacement" not in change:
-        print(f"Skipping change for {abs_path} as it does not have 'original' or 'replacement'.")
         return
 
-    with open(abs_path, 'r') as f:
+    with open(abs_path) as f:
         original_content = f.read()
     if original_content != change["original"]:
-        print(f"Skipping change for {abs_path} as the original content does not match the file content.")
+        print(f"\033[1;33mSkipping change for {abs_path} as the original content does not match the file content. This may be because another change has already been applied. Please see the changes lintrunner wanted to apply below and apply them manually:\033[0m")
+        diff = generate_diff(change["original"], change["replacement"])
+        colored_diff = colorize_diff(diff.splitlines())
+        for line in colored_diff:
+            print(line)
+        print()
         return
     with open(abs_path, 'w') as f:
         f.write(change["replacement"])
@@ -117,10 +140,10 @@ def main() -> None:
             for change in all_changes:
                 apply_change(change, args.cwd)
 
-    for path in res:
-        print(f"Cleaning up temporary files at {path}")
-        shutil.rmtree(path, ignore_errors=True)
-
+    # Clean up temporary directory
+    if TMP.exists():
+        shutil.rmtree(TMP)
+        print(f"Cleaned up temporary directory: {TMP}")
 
 if __name__ == "__main__":
     main()

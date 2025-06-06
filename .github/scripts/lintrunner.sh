@@ -54,8 +54,8 @@ jq --raw-output \
 
 cat lint.json
 python -m tools.linter.commit_changes --mode format-input --input-file lint.json
-cat lint.json.formatted
 mkdir artifacts-to-be-uploaded
 mv lint.json.formatted artifacts-to-be-uploaded/
+echo "run \`python -m tools.linter.commit_changes --mode apply-changes --workflow-id ${WORKFLOW_ID}\` to apply changes"
 
 exit $RC
