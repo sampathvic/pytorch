@@ -266,7 +266,7 @@ from tools.generate_torch_version import get_torch_version
 from tools.setup_helpers.cmake import CMake
 from tools.setup_helpers.env import build_type, IS_DARWIN, IS_LINUX, IS_WINDOWS
 from tools.setup_helpers.generate_linker_script import gen_linker_script
-from tools.setup_helpers.rocm_env import IS_ROCM, get_ck_dependency_string
+from tools.setup_helpers.rocm_env import get_ck_dependency_string, IS_ROCM
 
 
 def _get_package_path(package_name):
@@ -1024,7 +1024,7 @@ def configure_extension_build():
     # Adding extra requirements for ROCm builds
     if IS_ROCM:
         rocm_extra_install_requirements = [
-            'rocm-composable-kernel' + get_ck_dependency_string()
+            "rocm-composable-kernel" + get_ck_dependency_string()
         ]
 
         extra_install_requires += rocm_extra_install_requirements
