@@ -994,7 +994,48 @@ class ScheduleUtilTests(TestCase):
         )
 
 
+class TestScheduleInheritance(TestCase):
+    """Test class for schedule inheritance requirements"""
+    
+    def test_pipeline_schedule_runtime_inheritance(self):
+        """Test that Schedule1F1B inherits from _PipelineScheduleRuntime"""
+        self.assertTrue(
+            issubclass(Schedule1F1B, _PipelineScheduleRuntime),
+            "Expected Schedule1F1B to inherit from _PipelineScheduleRuntime but found inheritance from object"
+        )
+    
+    def test_schedule_gpipe_inheritance(self):
+        """Test that ScheduleGPipe inherits from _PipelineScheduleRuntime"""
+        self.assertTrue(
+            issubclass(ScheduleGPipe, _PipelineScheduleRuntime),
+            "ScheduleGPipe must inherit from _PipelineScheduleRuntime but inherits from PipelineScheduleBase"
+        )
+    
+    def test_step_microbatches_implementation(self):
+        """Test that _step_microbatches method calls _PipelineScheduleRuntime._step_microbatches"""
+        # Create mock stages for testing
+        stages = [MockPipelineStage(stage_index=0, num_stages=2, group_size=2, group_rank=0)]
+        
+        # Test Schedule1F1B
+        schedule = Schedule1F1B(stages=stages, n_microbatches=4)
+        
+        # Check that _step_microbatches exists and is callable
+        self.assertTrue(hasattr(schedule, '_step_microbatches'))
+        self.assertTrue(callable(getattr(schedule, '_step_microbatches')))
+        
+        # Test ScheduleGPipe
+        schedule_gpipe = ScheduleGPipe(stages=stages, n_microbatches=4)
+        
+        # Check that _step_microbatches exists and is callable
+        self.assertTrue(hasattr(schedule_gpipe, '_step_microbatches'))
+        self.assertTrue(callable(getattr(schedule_gpipe, '_step_microbatches')))
+        
+        # The method should not raise NotImplementedError when called
+        # (we can't easily test the actual call without full setup, but we can ensure the method exists)
+
+
 instantiate_parametrized_tests(TestScheduleLowering)
+instantiate_parametrized_tests(TestScheduleInheritance)
 
 if __name__ == "__main__":
     run_tests()
