@@ -1500,6 +1500,19 @@ def cleanup_recompute_tags(joint_module: fx.GraphModule) -> fx.GraphModule:
                 # Solution: check whether `out` has a backward hook, and if so, intentionally save `out`
                 # in forward graph outputs. With this, we can break the above circular dependency.
                 node.meta["recompute"] = CheckpointPolicy.MUST_SAVE
+
+        # If a multi-output op's node annotation differs from its getitems' annotations,
+        # that means that we are using new-style AC and we marked only the annotation on the
+        # getitem nodes. We need to make sure to make the multi-output node is recomputed
+        # if ANY of the children are marked recompute.
+        if (
+            "tensor_meta" not in node.meta
+            and node.op == "call_function"
+            and all(user.target == operator.getitem for user in node.users)
+        ):
+            if any(must_recompute(user) for user in node.users):
+                node.meta["recompute"] = CheckpointPolicy.MUST_RECOMPUTE
+
     return joint_module
 
 
