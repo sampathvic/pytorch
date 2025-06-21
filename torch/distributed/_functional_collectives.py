@@ -808,7 +808,10 @@ class _FromTorchTensor(torch.autograd.Function):
         ctx,  # pyre-ignore[2]: Parameter must be annotated.
         input: torch.Tensor,
     ) -> torch.Tensor:
-        return _maybe_wrap_tensor(input)
+        # For autograd functions, we always need AsyncCollectiveTensor behavior
+        # even when tracing/compiling, as autograd depends on the async semantics
+        res = AsyncCollectiveTensor(input)
+        return cast(torch.Tensor, res)
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:  # type: ignore[override]
