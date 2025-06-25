@@ -2,11 +2,7 @@
 
 import sys
 sys.argv.append("--jit-executor=legacy")
-from torch.testing._internal.common_utils import parse_cmd_line_args, run_tests
-
-# The tests decorators depend on command line arguments
-if __name__ == '__main__':
-    parse_cmd_line_args()
+from torch.testing._internal.common_utils import run_tests
 
 from test_jit import *  # noqa: F403, F401
 

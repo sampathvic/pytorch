@@ -1798,10 +1798,10 @@ def skipRocmIfTorchInductor(msg="test doesn't currently work with torchinductor 
 
 def skipIfLegacyJitExecutor(msg="test doesn't currently work with legacy JIT executor"):
     def decorator(fn):
-        assert GRAPH_EXECUTOR
         if not isinstance(fn, type):
             @wraps(fn)
             def wrapper(*args, **kwargs):
+                assert GRAPH_EXECUTOR
                 if GRAPH_EXECUTOR == ProfilingMode.LEGACY:
                     raise unittest.SkipTest(msg)
                 else:
