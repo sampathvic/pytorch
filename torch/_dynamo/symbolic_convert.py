@@ -989,7 +989,7 @@ class ExceptionStack:
     # and "stack" sometimes refers to a C variable with the same name and the
     # exception stack, respectively.
     #
-    # The lifetime of an exception is (Python 3.11+):
+    # The lifetime of an exception in Python 3.11+ is:
     #  + tx._raise_exception_variable(...) := sets the current_exception variable
     #  + PUSH_EXC_INFO := pushes the current_exception to the *exception stack*
     #  + POP_EXCEPT := pops TOS from the *exception stack*
@@ -3354,6 +3354,7 @@ class InstructionTranslator(InstructionTranslatorBase):
             package=package,
         )
 
+        self.local_generators: list[LocalGeneratorObjectVariable] = []
         self._throw_if_in_functorch()
 
         # as soon as we create the tracing context we should keep it active, so any calls
@@ -3454,6 +3455,12 @@ class InstructionTranslator(InstructionTranslatorBase):
                 self.symbolic_locals = variables.LazyVariableTracker.realize_all(
                     self.symbolic_locals
                 )
+
+    def close_local_generators(self):
+        with temporarely_allow_writes_to_output_graph(self):
+            for gen in self.local_generators:
+                if not gen._is_generator_exhausted():
+                    gen.call_method(self, "close", [], {})
 
     def _throw_if_in_functorch(self):
         # Fallback to eager in case of a graph break inside vmap
@@ -3933,7 +3940,13 @@ class InliningInstructionTranslator(InstructionTranslatorBase):
             ):
                 assert isinstance(self, InliningGeneratorInstructionTranslator)
                 # When the generator returns None, we raise StopIteration
-                exc.raise_observed_exception(StopIteration, self)
+                args = []
+                if (
+                    isinstance(self.symbolic_result, ConstantVariable)
+                    and self.symbolic_result.value is not None
+                ):
+                    args = [self.symbolic_result]
+                exc.raise_observed_exception(StopIteration, self, args=args)
             else:
                 return self.symbolic_result
         else:
