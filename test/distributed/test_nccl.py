@@ -18,7 +18,6 @@ from torch.testing._internal.common_utils import (
     IS_WINDOWS,
     load_tests,
     NoTest,
-    requires_cuda_p2p_access,
     run_tests,
     skip_but_pass_in_sandcastle_if,
     TEST_WITH_ROCM,
@@ -242,17 +241,24 @@ class TestNCCL(TestCase):
             self.assertEqual(outputs[i], expected[i])
 
 
-@requires_cuda_p2p_access()
+device_type = "cuda"
+device_module = torch.get_device_module(device_type)
+
+
 class NCCLSymmetricMemoryTest(MultiProcContinousTest):
+    def _init_device(self) -> None:
+        # TODO: relieve this (seems to hang if without)
+        device_module.set_device(self.device)
+
     @property
     def device(self) -> torch.device:
-        return torch.device("cuda", self.rank)
+        return torch.device(device_type, self.rank)
 
     # To run this test, one needs to TORCH_SYMMMEM=NCCL when running the test.
     @skip_but_pass_in_sandcastle_if(TEST_WITH_ROCM, "Skip NCCL tests for ROCm")
     @skip_but_pass_in_sandcastle_if(IS_WINDOWS, "NCCL doesn't support Windows")
     def test_nccl_symmem_alloc(self):
-        torch.cuda.set_device(self.rank)
+        self._init_device()
         c10d.all_reduce(torch.ones(1, device=self.device))
         group_name = c10d.group.WORLD.group_name
         symm_mem.enable_symm_mem_for_group(group_name)
