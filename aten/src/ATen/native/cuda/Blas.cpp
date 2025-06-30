@@ -1453,12 +1453,12 @@ _scaled_mm_out_cuda(const Tensor& mat1, const Tensor& mat2,
       params.k = args.k;
       params.a = args.mata->data_ptr();
       params.a_scale_ptr = args.scale_mata_ptr;
-      params.a_scale_type = scale_a.scalar_type();
+      params.a_scale_dtype = args.scale_mata_dtype.value();
       params.lda = args.lda;
       params.a_dtype = args.mata->scalar_type();
       params.b = args.matb->data_ptr();
       params.b_scale_ptr = args.scale_matb_ptr;
-      params.b_scale_type = scale_b.scalar_type();
+      params.b_scale_dtype = args.scale_matb_dtype.value();
       params.ldb = args.ldb;
       params.b_dtype = args.matb->scalar_type();
       params.bias_ptr = bias ? bias->data_ptr(): nullptr;
