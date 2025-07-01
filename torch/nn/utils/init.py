@@ -1,10 +1,20 @@
-# mypy: allow-untyped-defs
 import inspect
+from typing import Any, TYPE_CHECKING, TypeVar
+from typing_extensions import TypeVarTuple, Unpack
 
 import torch
 
 
-def skip_init(module_cls, *args, **kwargs):
+if TYPE_CHECKING:
+    from torch.nn import Module
+
+T = TypeVar("T", bound="Module")
+Ts = TypeVarTuple("Ts")
+
+__all__ = ["skip_init"]
+
+
+def skip_init(module_cls: type[T], *args: Unpack[Ts], **kwargs: Any) -> T:
     r"""
     Given a module class object and args / kwargs, instantiate the module without initializing parameters / buffers.
 
