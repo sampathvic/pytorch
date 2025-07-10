@@ -137,7 +137,7 @@ class Foo:
 f = Foo(10)
 f.bar = 1
 
-torch.manual_seed(0)
+torch.manual_seed(1234)
 foo_cpu_tensor = Foo(torch.randn(3, 3))
 
 
@@ -397,7 +397,6 @@ class ControlFlowToyModel(nn.Module):
             return F.relu(self.lin1(x))
 
 
-torch.manual_seed(1234)
 DDP_NET = Net()
 BN_NET = BatchNormNet()
 BN_NET_NO_AFFINE = BatchNormNet(affine=False)
