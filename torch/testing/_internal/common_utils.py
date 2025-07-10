@@ -2427,7 +2427,7 @@ def get_function_arglist(func):
     return inspect.getfullargspec(func).args
 
 
-def set_rng_seed(seed =None):
+def set_rng_seed(seed=None):
     if seed is None:
         assert SEED is not None
         seed = SEED
@@ -5807,4 +5807,3 @@ def recover_orig_fp32_precision(fn):
             torch.backends.cuda.matmul.fp32_precision = old_cuda_matmul_p
 
     return recover()(fn)
-

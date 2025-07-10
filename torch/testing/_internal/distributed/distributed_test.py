@@ -137,6 +137,7 @@ class Foo:
 f = Foo(10)
 f.bar = 1
 
+torch.manual_seed(0)
 foo_cpu_tensor = Foo(torch.randn(3, 3))
 
 
