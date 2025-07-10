@@ -2429,8 +2429,17 @@ def get_function_arglist(func):
 
 def set_rng_seed(seed=None):
     if seed is None:
-        assert SEED is not None
-        seed = SEED
+        if SEED is not None:
+            seed = SEED
+        else:
+            # Can't assert here: this function is called by TestCase.setUp() and some out of tree tests inherit from that class.
+            # So just print a warning and hardcode the seed.
+            seed = 1234
+            msg = ("set_rng_seed() was called without providing a seed and the command line "
+                   f"arguments haven't been parsed so the seed will be set to {seed}. "
+                   "To remove this warning make sure your test is run via run_tests() or "
+                   "parse_cmd_line_args() is called before set_rng_seed() is called.")
+            warnings.warn(msg)
     torch.manual_seed(seed)
     random.seed(seed)
     if TEST_NUMPY:

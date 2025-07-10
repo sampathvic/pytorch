@@ -3,6 +3,13 @@
 
 import torch
 
+if __name__ == '__main__':
+    from torch.testing._internal.common_utils import parse_cmd_line_args
+
+    # The value of GRAPH_EXECUTOR depends on command line arguments so make sure they're parsed
+    # before instantiating tests.
+    parse_cmd_line_args()
+
 # This is how we include tests located in test/jit/...
 # They are included here so that they are invoked when you call `test_jit.py`,
 # do not run these test files directly.
@@ -97,7 +104,7 @@ import torch.nn.functional as F
 from torch.testing._internal import jit_utils
 from torch.testing._internal.common_jit import check_against_reference
 from torch.testing._internal.common_utils import run_tests, IS_WINDOWS, \
-    parse_cmd_line_args, suppress_warnings, IS_SANDCASTLE, ProfilingMode, \
+    GRAPH_EXECUTOR, suppress_warnings, IS_SANDCASTLE, ProfilingMode, \
     TestCase, freeze_rng_state, slowTest, TemporaryFileName, \
     enable_profiling_mode_for_profiling_tests, TEST_MKL, set_default_dtype, num_profiled_runs, \
     skipIfCrossRef, skipIfTorchDynamo
@@ -146,13 +153,6 @@ import warnings
 import zipfile
 import tracemalloc
 
-
-if __name__ == '__main__':
-    # The value of GRAPH_EXECUTOR depends on command line arguments so make sure they're parsed
-    # before instantiating tests.
-    parse_cmd_line_args()
-
-from torch.testing._internal.common_utils import GRAPH_EXECUTOR
 
 def canonical(graph):
     return torch._C._jit_pass_canonicalize(graph).str(False)
