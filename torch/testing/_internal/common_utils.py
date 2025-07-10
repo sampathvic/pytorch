@@ -120,7 +120,7 @@ PYTEST_SINGLE_TEST = ""
 REPEAT_COUNT = 0
 RERUN_DISABLED_TESTS = False
 RUN_PARALLEL = 0
-SEED = 0
+SEED : Optional[int] = None
 SHOWLOCALS = False
 SLOW_TESTS_FILE = ""
 TEST_BAILOUTS = False
@@ -129,7 +129,6 @@ TEST_IN_SUBPROCESS = False
 TEST_SAVE_XML = ""
 UNITTEST_ARGS : list[str] = []
 USE_PYTEST = False
-
 
 def freeze_rng_state(*args, **kwargs):
     return torch.testing._utils.freeze_rng_state(*args, **kwargs)
@@ -2428,7 +2427,10 @@ def get_function_arglist(func):
     return inspect.getfullargspec(func).args
 
 
-def set_rng_seed(seed):
+def set_rng_seed(seed =None):
+    if seed is None:
+        assert SEED is not None
+        seed = SEED
     torch.manual_seed(seed)
     random.seed(seed)
     if TEST_NUMPY:
@@ -3449,7 +3451,7 @@ class TestCase(expecttest.TestCase):
 
     def setUp(self):
         check_if_enable(self)
-        set_rng_seed(SEED)
+        set_rng_seed()
 
         # Save global check sparse tensor invariants state that can be
         # restored from tearDown:
@@ -5805,3 +5807,4 @@ def recover_orig_fp32_precision(fn):
             torch.backends.cuda.matmul.fp32_precision = old_cuda_matmul_p
 
     return recover()(fn)
+
