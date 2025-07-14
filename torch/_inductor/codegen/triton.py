@@ -955,8 +955,11 @@ class TritonOverrides(OpOverrides):
             # to work around llvm uint conversion semantics
             # that produces 0's for negative values
             return f"{x}.to(tl.int8).to(tl.uint8)"
-
-        if use_compute_types:
+       
+        if V.kernel.is_native_matmul():
+            # do not promote float16 / bfloat16 to float32 during native matmul codegen
+            out_dtype = triton_store_type(dtype)
+        elif use_compute_types:
             out_dtype = triton_compute_type(dtype)
         else:
             out_dtype = triton_store_type(dtype)
