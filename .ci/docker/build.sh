@@ -220,18 +220,6 @@ case "$tag" in
     VISION=yes
     TRITON=yes
     ;;
-  pytorch-linux-jammy-rocm-n-1-py3)
-    ANACONDA_PYTHON_VERSION=3.10
-    GCC_VERSION=11
-    VISION=yes
-    ROCM_VERSION=6.3
-    NINJA_VERSION=1.9.0
-    TRITON=yes
-    KATEX=yes
-    UCX_COMMIT=${_UCX_COMMIT}
-    UCC_COMMIT=${_UCC_COMMIT}
-    INDUCTOR_BENCHMARKS=yes
-    ;;
   pytorch-linux-jammy-rocm-n-py3 | pytorch-linux-noble-rocm-n-py3)
     if [[ $tag =~ "jammy" ]]; then
       ANACONDA_PYTHON_VERSION=3.10
@@ -241,6 +229,18 @@ case "$tag" in
     GCC_VERSION=11
     VISION=yes
     ROCM_VERSION=6.4
+    NINJA_VERSION=1.9.0
+    TRITON=yes
+    KATEX=yes
+    UCX_COMMIT=${_UCX_COMMIT}
+    UCC_COMMIT=${_UCC_COMMIT}
+    INDUCTOR_BENCHMARKS=yes
+    ;;
+  pytorch-linux-noble-rocm-alpha-py3)
+    ANACONDA_PYTHON_VERSION=3.12
+    GCC_VERSION=11
+    VISION=yes
+    ROCM_VERSION=7.0
     NINJA_VERSION=1.9.0
     TRITON=yes
     KATEX=yes
