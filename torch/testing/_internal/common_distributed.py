@@ -727,9 +727,9 @@ class MultiProcessTestCase(TestCase):
                     self._current_test_name(),
                     self.file_name,
                     child_conn,
-                    common_utils.SEED,
                 ),
                 kwargs={
+                    "seed": common_utils.SEED,
                     "fake_pg": getattr(self, "fake_pg", False),
                 },
             )
