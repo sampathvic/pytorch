@@ -28,6 +28,8 @@ from torch.testing._internal.jit_utils import (
 
 
 assert GRAPH_EXECUTOR is not None
+
+
 @unittest.skipIf(
     GRAPH_EXECUTOR == ProfilingMode.SIMPLE, "Simple Executor doesn't support gradients"
 )

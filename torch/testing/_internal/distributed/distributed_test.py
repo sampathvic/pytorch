@@ -137,17 +137,18 @@ class Foo:
 f = Foo(10)
 f.bar = 1
 
-torch.manual_seed(1234)
-foo_cpu_tensor = Foo(torch.randn(3, 3))
 
+# Defer instantiation until the seed is set so that randn() returns the same
+# values in all processes.
+def create_collectives_object_test_list():
+    return [
+        {"key1": 3, "key2": 4, "key3": {"nested": True}},
+        f,
+        Foo(torch.randn(3, 3)),
+        "foo",
+        [1, 2, True, "string", [4, 5, "nested"]],
+    ]
 
-COLLECTIVES_OBJECT_TEST_LIST = [
-    {"key1": 3, "key2": 4, "key3": {"nested": True}},
-    f,
-    foo_cpu_tensor,
-    "foo",
-    [1, 2, True, "string", [4, 5, "nested"]],
-]
 
 # Allowlist of distributed backends where profiling collectives is supported.
 PROFILING_SUPPORTED_BACKENDS = [
@@ -595,12 +596,13 @@ class TestDistBackend(MultiProcessTestCase):
         return False
 
     @classmethod
-    def _run(cls, rank, test_name, file_name, pipe, **kwargs):
+    def _run(cls, rank, test_name, file_name, pipe, seed, **kwargs):
         if BACKEND == "nccl" and not torch.cuda.is_available():
             sys.exit(TEST_SKIPS["no_cuda"].exit_code)
         self = cls(test_name)
         self.rank = rank
         self.file_name = file_name
+        self.seed = seed
 
         if torch.cuda.is_available() and torch.cuda.device_count() < int(
             self.world_size
@@ -6645,7 +6647,7 @@ class DistributedTest:
         def _test_allgather_object(self, subgroup=None):
             # Only set device for NCCL backend since it must use GPUs.
 
-            gather_objects = COLLECTIVES_OBJECT_TEST_LIST.copy()
+            gather_objects = create_collectives_object_test_list()
 
             backend = os.environ["BACKEND"]
             if backend == "nccl":
@@ -6689,7 +6691,7 @@ class DistributedTest:
 
         def _test_gather_object(self, pg=None):
             # Ensure stateful objects can be gathered
-            gather_objects = COLLECTIVES_OBJECT_TEST_LIST.copy()
+            gather_objects = create_collectives_object_test_list()
             my_rank = dist.get_rank(pg)
 
             backend = os.environ["BACKEND"]
@@ -7555,7 +7557,7 @@ class DistributedTest:
                     loss.backward()
 
         def _test_broadcast_object_list(self, group=None):
-            gather_objects = COLLECTIVES_OBJECT_TEST_LIST.copy()
+            gather_objects = create_collectives_object_test_list()
 
             # Only set device for NCCL backend since it must use GPUs.
             # Case where rank != GPU device.
@@ -8279,10 +8281,11 @@ class DistributedTest:
         @require_backend_is_available({"gloo"})
         def test_scatter_object_list(self):
             src_rank = 0
+            collectives_object_test_list = create_collectives_object_test_list()
             scatter_list = (
-                COLLECTIVES_OBJECT_TEST_LIST
+                collectives_object_test_list
                 if self.rank == src_rank
-                else [None for _ in COLLECTIVES_OBJECT_TEST_LIST]
+                else [None for _ in collectives_object_test_list]
             )
             world_size = dist.get_world_size()
             scatter_list = scatter_list[:world_size]
@@ -8295,8 +8298,8 @@ class DistributedTest:
             dist.scatter_object_list(output_obj_list, scatter_list, src=src_rank)
             self.assertEqual(
                 output_obj_list[0],
-                COLLECTIVES_OBJECT_TEST_LIST[
-                    self.rank % len(COLLECTIVES_OBJECT_TEST_LIST)
+                collectives_object_test_list[
+                    self.rank % len(collectives_object_test_list)
                 ],
             )
             # Ensure errors are raised upon incorrect arguments.
