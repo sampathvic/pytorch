@@ -81,8 +81,8 @@ class NodeSource:
             self.from_node = []
 
         # cache the action string and dict representation for performance.
-        self._action_string: Optional[str] = None
-        self._dict: Optional[dict[str, Any]] = None
+        self._action_string = None
+        self._dict = None
 
     @property
     def name(self) -> str:

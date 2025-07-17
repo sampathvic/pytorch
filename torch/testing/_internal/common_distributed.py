@@ -672,6 +672,7 @@ class MultiProcessTestCase(TestCase):
         if methodName != "runTest":
             method_name = methodName
         super().__init__(method_name)
+        self.seed = None
         try:
             fn = getattr(self, method_name)
             setattr(self, method_name, self.join_or_run(fn))
@@ -807,7 +808,8 @@ class MultiProcessTestCase(TestCase):
         # Show full C++ stacktraces when a Python error originating from C++ is raised.
         os.environ["TORCH_SHOW_CPP_STACKTRACES"] = "1"
 
-        common_utils.set_rng_seed(self.seed)
+        if self.seed is not None:
+            common_utils.set_rng_seed(self.seed)
 
         # self.id() == e.g. '__main__.TestDistributed.test_get_rank'
         # We're retrieving a corresponding test and executing it.
@@ -1546,7 +1548,7 @@ class DynamoDistributedMultiProcTestCase(DistributedTestBase):
 
     @classmethod
     def _run(
-        cls, rank: int, test_name: str, file_name: str, parent_pipe, **kwargs
+        cls, rank: int, test_name: str, file_name: str, parent_pipe, seed: int, **kwargs
     ) -> None:
         trace_log.addHandler(logging.NullHandler())
 
@@ -1554,6 +1556,7 @@ class DynamoDistributedMultiProcTestCase(DistributedTestBase):
         self = cls(test_name)
         self.rank = rank
         self.file_name = file_name
+        self.seed = seed
         self.run_test(test_name, parent_pipe)
 
 
