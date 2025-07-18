@@ -20,6 +20,7 @@
 #include <unordered_map>
 
 #include <torch/csrc/distributed/c10d/Backend.hpp>
+#include <torch/csrc/distributed/c10d/CUDAEventCache.hpp>
 #include <torch/csrc/distributed/c10d/NCCLUtils.hpp>
 #include <torch/csrc/distributed/c10d/PrefixStore.hpp>
 #include <torch/csrc/distributed/c10d/Store.hpp>
@@ -503,22 +504,7 @@ class TORCH_API ProcessGroupNCCL : public Backend {
     friend class ProcessGroupNCCL;
   };
 
-  class CUDAEventCache
-      : public std::enable_shared_from_this<ProcessGroupNCCL::CUDAEventCache> {
-   public:
-    CUDAEventCache();
-    std::shared_ptr<at::cuda::CUDAEvent> create(bool timing);
-    static std::shared_ptr<ProcessGroupNCCL::CUDAEventCache> get(
-        at::DeviceIndex device);
 
-   private:
-    std::mutex cacheMutex_;
-    // NOTE: We intentionally store raw pointers so that
-    // we do not attempt to destroy the event objects on process exit,
-    // because cuda may be gone.
-    std::array<std::deque<at::cuda::CUDAEvent*>, 2>
-        eventsArray_; // 0 for timing=false, 1 for timing=true
-  };
 
   struct Options : Backend::Options {
     // NOTE: timeout in ProcessGroupNCCL::Options denote the timeout for
