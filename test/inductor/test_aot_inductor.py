@@ -5677,6 +5677,53 @@ class AOTInductorTestsTemplate:
         )
         self.assertEqual(new_expected, new_output)
 
+    def test_update_constant_buffer_simple(self):
+        class Model(torch.nn.Module):
+            def __init__(self, device):
+                super().__init__()
+                self.weight = torch.randn((3, 3), device=device)
+
+            def forward(self, a):
+                return a + self.weight
+
+        model = Model(self.device)
+        a = torch.randn((3, 3), device=self.device)
+        example_inputs = (a,)
+
+        with torch.no_grad(), config.patch({"always_keep_tensor_constants": True}):
+            so_path = AOTIRunnerUtil.legacy_compile(
+                model=model,
+                example_inputs=example_inputs,
+            )
+
+        runner = AOTIRunnerUtil.legacy_load_runner(self.device, so_path)
+
+        # Let's check whether the model has correct constant name mapping.
+        expected_original_fqns = {
+            "L__self___weight": "L__self___weight",
+        }
+        self.assertEqual(
+            expected_original_fqns, runner.get_constant_names_to_original_fqns()
+        )
+
+        test_inputs = torch.randn((3, 3), device=self.device)
+        new_weight = torch.randn((3, 3), device=self.device)
+        model.weight = new_weight
+        attach_weights = {"L__self___weight": new_weight}
+        runner.update_constant_buffer(attach_weights, False, False, False)
+        expected = model(test_inputs)
+
+        def runner_call(*args, **kwargs):
+            call_spec = runner.get_call_spec()  # type: ignore[attr-defined]
+            out_spec = pytree.treespec_loads(call_spec[1])
+            flat_inputs = pytree.tree_flatten((args, kwargs))[0]
+            flat_inputs = [x for x in flat_inputs if isinstance(x, torch.Tensor)]
+            flat_outputs = runner.run(flat_inputs)  # type: ignore[attr-defined]
+            return pytree.tree_unflatten(flat_outputs, out_spec)
+
+        output = runner_call(test_inputs)
+        self.assertEqual(expected, output)
+
     def test_update_inactive_constant_buffer(self):
         class Model(torch.nn.Module):
             def __init__(self, n, k, device):
