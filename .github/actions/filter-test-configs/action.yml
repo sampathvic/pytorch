@@ -57,19 +57,11 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: nick-fields/retry@v3.0.2
-      name: Setup dependencies
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-      with:
-        shell: bash
-        timeout_minutes: 10
-        max_attempts: 5
-        retry_wait_seconds: 30
-        command: |
+    - name: Install Dependencies
+      id: install-dependencies
+      shell: bash
+      run: |
           set -eux
-          echo ${PATH}
-          echo ${PYTHON_PATH}
           python3 -m pip install requests==2.32.4 pyyaml==6.0.2
 
     - name: Parse ref
